@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VICTORIA">
+    <meta name="theme-color" content="#0066cc">
+    <title>VICTORIA — Сервис совместных поездок</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --border: #e0e0e0;
+            --card-bg: #ffffff;
+            --input-bg: #f5f5f5;
+            --accent: #0066cc;
+            --accent-dark: #0052a3;
+            --accent-light: #e6f0ff;
+            --error: #dc2626;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --chat-bubble-user: #0066cc;
+            --chat-bubble-driver: #e5e7eb;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #121212;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --border: #2a2a2a;
+            --card-bg: #1a1a1a;
+            --input-bg: #2a2a2a;
+            --accent: #3b82f6;
+            --accent-light: #1e3a5f;
+            --chat-bubble-driver: #2a2a2a;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif; background: var(--bg-secondary); color: var(--text-primary); display: flex; justify-content: center; min-height: 100vh; }
+        .app-wrapper { width: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-secondary); min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+        .header { padding: 16px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+        .logo-sub { font-size: 10px; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
+        .lang-selector { display: flex; gap: 4px; background: var(--input-bg); padding: 3px; border-radius: 8px; }
+        .lang-btn { padding: 6px 12px; border: none; background: transparent; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; }
+        .lang-btn.active { background: var(--accent); color: white; }
+        .install-banner { background: var(--accent-light); margin: 12px 16px; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .install-btn { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 12px; cursor: pointer; }
+        
+        .main-content { flex: 1; overflow-y: auto; padding-bottom: 72px; }
+        .screen { display: none; animation: fadeIn 0.3s ease; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .container { padding: 0 16px; }
+        .section { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-top: 12px; border: 1px solid var(--border); }
+        .section-header { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 0.5px; }
+        .address-item { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .address-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .address-dot.green { background: var(--success); }
+        .address-dot.red { background: var(--error); }
+        .address-dot.gray { background: var(--text-secondary); }
+        .address-input { flex: 1; background: var(--input-bg); border: 1px solid var(--border); padding: 12px 14px; border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text-primary); }
+        .address-input:focus { outline: none; border-color: var(--accent); }
+        .add-address-btn { margin-left: 20px; color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer; padding: 8px 0; }
+        .remove-address { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-secondary); padding: 8px; min-width: 40px; min-height: 40px; }
+        .remove-address:active { color: var(--error); }
+        .passenger-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+        .counter-group { display: flex; align-items: center; gap: 16px; }
+        .counter-btn { min-width: 40px; min-height: 40px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 18px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+        .counter-btn:active { opacity: 0.7; }
+        .passenger-count { font-size: 16px; font-weight: 600; min-width: 36px; text-align: center; }
+        .max-hint { font-size: 11px; color: var(--text-secondary); margin-top: 8px; }
+        .total-info { background: var(--accent-light); border-radius: 8px; padding: 10px; margin-top: 12px; font-size: 12px; }
+        .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .service-checkbox-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--input-bg); border-radius: 8px; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s; font-size: 13px; }
+        .service-checkbox-item.active { background: var(--accent-light); border-color: var(--accent); }
+        .service-checkbox-control { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; }
+        .service-checkbox-item.active .service-checkbox-control { background: var(--accent); border-color: var(--accent); }
+        .service-checkbox-control::after { content: ''; width: 9px; height: 5px; border-left: 2px solid white; border-bottom: 2px solid white; transform: rotate(-45deg); display: none; }
+        .service-checkbox-item.active .service-checkbox-control::after { display: block; }
+        .service-checkbox-price { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        .service-note { margin-top: 12px; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 11px; text-align: center; }
+        .add-child-btn { background: var(--input-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; cursor: pointer; margin-bottom: 12px; font-size: 13px; min-height: 44px; align-items: center; }
+        .child-item { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .remove-child { color: var(--error); background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; min-width: 40px; min-height: 40px; }
+        .comment-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); padding: 12px 14px; border-radius: 8px; font-size: 14px; font-family: inherit; }
+        .comment-input:focus { outline: none; border-color: var(--accent); }
+        
+        .price-section { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-top: 12px; border: 1px solid var(--border); }
+        .price-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 0.5px; }
+        .price-input-wrapper { display: flex; align-items: center; gap: 8px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .price-currency { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .price-input { flex: 1; background: transparent; border: none; font-size: 18px; font-weight: 600; color: var(--text-primary); padding: 4px 0; }
+        .price-input::placeholder { color: var(--text-secondary); font-weight: 400; }
+        .price-input:focus { outline: none; }
+        .price-range { font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center; }
+        .price-error { color: var(--error); font-size: 11px; margin-top: 8px; text-align: center; display: none; }
+        .price-error.show { display: block; }
+        
+        .search-btn { width: calc(100% - 32px); background: var(--accent); color: white; font-weight: 600; padding: 16px; border: none; border-radius: 10px; font-size: 16px; margin: 20px 16px 20px 16px; cursor: pointer; transition: opacity 0.2s; }
+        .search-btn:active { opacity: 0.8; }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .status-container { padding: 0 16px 20px; }
+        .no-orders-card { background: var(--card-bg); border-radius: 12px; padding: 48px 20px; text-align: center; margin-top: 20px; border: 1px solid var(--border); }
+        .no-orders-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+        .no-orders-text { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; }
+        .order-status-card { background: var(--card-bg); border-radius: 12px; margin-top: 16px; overflow: hidden; border: 1px solid var(--border); }
+        .status-header { background: var(--accent); padding: 20px; color: white; }
+        .status-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+        .status-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+        .status-route { font-size: 14px; font-weight: 500; opacity: 0.9; margin-top: 8px; }
+        .status-price { font-size: 24px; font-weight: 700; margin-top: 12px; }
+        .status-timer { font-size: 13px; margin-top: 4px; opacity: 0.8; font-family: monospace; }
+        .driver-card { padding: 16px; }
+        .driver-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .driver-avatar { width: 48px; height: 48px; background: var(--accent-light); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; color: var(--accent); }
+        .driver-info { flex: 1; }
+        .driver-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .driver-rating { font-size: 12px; color: var(--text-secondary); }
+        .car-details { display: flex; gap: 12px; margin-bottom: 12px; padding: 8px 0; flex-wrap: wrap; }
+        .car-detail { flex: 1; min-width: 80px; }
+        .car-detail-label { color: var(--text-secondary); font-size: 10px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .car-detail-value { font-weight: 500; font-size: 13px; }
+        .status-message { background: var(--accent-light); padding: 12px; border-radius: 8px; text-align: center; margin-top: 12px; }
+        .status-message-text { font-size: 13px; font-weight: 500; color: var(--accent); }
+        .status-actions { display: flex; gap: 12px; padding: 16px; border-top: 1px solid var(--border); }
+        .cancel-order-btn { flex: 1; background: var(--error); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .raise-price-btn { flex: 1; background: var(--warning); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .chat-btn { flex: 1; background: var(--success); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        
+        .chat-container { display: flex; flex-direction: column; height: 500px; max-height: 70vh; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; }
+        .chat-message { margin-bottom: 12px; display: flex; }
+        .chat-message-user { justify-content: flex-end; }
+        .chat-message-driver { justify-content: flex-start; }
+        .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+        .chat-bubble-user { background: var(--chat-bubble-user); color: white; border-bottom-right-radius: 4px; }
+        .chat-bubble-driver { background: var(--chat-bubble-driver); color: var(--text-primary); border-bottom-left-radius: 4px; }
+        .chat-time { font-size: 10px; margin-top: 4px; opacity: 0.6; }
+        .chat-input-area { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); background: var(--card-bg); }
+        .chat-input { flex: 1; background: var(--input-bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 20px; font-size: 14px; }
+        .chat-input:focus { outline: none; border-color: var(--accent); }
+        .chat-send-btn { background: var(--accent); color: white; border: none; width: 40px; height: 40px; border-radius: 20px; cursor: pointer; }
+        
+        .history-item { background: var(--card-bg); border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 14px 10px 14px; }
+        .history-date { font-size: 11px; color: var(--text-secondary); }
+        .history-delete { width: 36px; height: 36px; border-radius: 18px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
+        .history-delete:active { background: var(--input-bg); color: var(--error); }
+        .history-content { padding: 0 14px 14px 14px; }
+        .history-route { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        .history-waypoints { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+        .history-price { font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 4px; }
+        .history-comment { font-size: 12px; color: var(--text-secondary); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+        .history-details { font-size: 11px; color: var(--text-secondary); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+        .empty-history { text-align: center; padding: 48px 20px; color: var(--text-secondary); font-size: 13px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); }
+        
+        .support-container { padding: 0 16px 20px; }
+        .support-header { background: var(--accent); padding: 24px 20px; border-radius: 12px; margin-bottom: 16px; color: white; }
+        .support-header-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+        .support-header-subtitle { font-size: 13px; opacity: 0.9; }
+        .support-section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+        .support-message-form { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid var(--border); margin-bottom: 16px; }
+        .support-input, .support-textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border); padding: 12px 14px; border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text-primary); margin-bottom: 12px; }
+        .support-textarea { min-height: 100px; resize: vertical; }
+        .support-input:focus, .support-textarea:focus { outline: none; border-color: var(--accent); }
+        .support-send-btn { width: 100%; background: var(--accent); color: white; font-weight: 600; padding: 14px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-bottom: 12px; }
+        .support-admin-btn { width: 100%; background: var(--card-bg); color: var(--accent); font-weight: 600; padding: 14px; border: 1px solid var(--accent); border-radius: 8px; font-size: 15px; cursor: pointer; }
+        
+        .profile-container { padding: 0 16px 20px; }
+        .profile-card { background: var(--accent); padding: 24px; border-radius: 12px; margin-bottom: 16px; color: white; }
+        .profile-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
+        .profile-phone { font-size: 13px; opacity: 0.9; }
+        .profile-menu-item { background: var(--card-bg); border-radius: 10px; padding: 16px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+        .profile-menu-item:active { background: var(--input-bg); transform: scale(0.99); }
+        .profile-menu-left { flex: 1; }
+        .profile-menu-title { font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+        .profile-menu-sub { font-size: 11px; color: var(--text-secondary); }
+        .profile-menu-arrow { font-size: 18px; color: var(--text-secondary); }
+        
+        .bottom-nav { background: var(--card-bg); display: flex; justify-content: space-around; padding: 8px 16px 20px; border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; z-index: 200; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; transition: all 0.2s; min-width: 60px; }
+        .nav-icon svg { width: 22px; height: 22px; stroke: var(--text-secondary); stroke-width: 1.5; fill: none; }
+        .nav-item.active .nav-icon svg { stroke: var(--accent); }
+        .nav-label { font-size: 10px; font-weight: 500; color: var(--text-secondary); }
+        .nav-item.active .nav-label { color: var(--accent); }
+        
+        .region-section { background: var(--card-bg); border-radius: 12px; padding: 16px; margin: 12px 16px 0 16px; border: 1px solid var(--border); }
+        .region-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; letter-spacing: 0.5px; }
+        .region-selector { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; cursor: pointer; transition: all 0.2s; font-size: 14px; min-height: 44px; align-items: center; }
+        .selected-region-info { background: var(--accent-light); border-radius: 8px; padding: 8px 12px; margin-top: 12px; font-size: 12px; }
+        
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: var(--card-bg); border-radius: 16px; max-height: 85%; width: 90%; max-width: 400px; overflow: hidden; }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+        .modal-close { font-size: 24px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
+        .modal-list { padding: 8px 0; max-height: 60vh; overflow-y: auto; }
+        .modal-item { padding: 14px 20px; font-size: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; min-height: 52px; }
+        .modal-item:active { background: var(--input-bg); }
+        .back-btn { padding: 14px 20px; cursor: pointer; color: var(--accent); text-align: center; border-top: 1px solid var(--border); font-weight: 500; }
+        .age-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 20px; }
+        .age-option { text-align: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 14px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        .toast-message { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text-primary); color: var(--bg-primary); padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+        
+        .offline-badge { position: fixed; top: 0; left: 0; right: 0; background: var(--error); color: white; text-align: center; padding: 6px; font-size: 11px; transform: translateY(-100%); z-index: 3000; transition: transform 0.3s ease; max-width: 600px; margin: 0 auto; }
+        .offline-badge.show { transform: translateY(0); }
+        .child-badge { display: inline-block; padding: 2px 8px; background: var(--accent-light); border-radius: 4px; font-size: 10px; margin-left: 8px; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+        
+        .driver-section { margin-bottom: 20px; }
+        .driver-section-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .driver-form-group { margin-bottom: 16px; }
+        .driver-form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+        .driver-form-input, .driver-form-select { width: 100%; background: var(--input-bg); border: 1px solid var(--border); padding: 12px 14px; border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text-primary); }
+        .driver-form-input:focus, .driver-form-select:focus { outline: none; border-color: var(--accent); }
+        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
+        .photo-item { background: var(--input-bg); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; border: 1px dashed var(--border); transition: all 0.2s; font-size: 12px; min-height: 100px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .photo-item.has-photo { border: 2px solid var(--success); background: var(--accent-light); }
+        .photo-preview { width: 100%; height: 60px; object-fit: cover; border-radius: 6px; margin-top: 4px; }
+        .photo-delete { background: var(--error); color: white; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; cursor: pointer; margin-top: 4px; }
+        .driver-submit-btn { width: 100%; background: var(--accent); color: white; font-weight: 600; padding: 14px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 16px; }
+        .driver-card-full { background: var(--bg-secondary); border-radius: 10px; padding: 14px; margin-top: 10px; }
+        .driver-card-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .driver-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+        .driver-photo { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; background: var(--input-bg); }
+        .driver-status { margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; font-weight: 500; font-size: 13px; }
+        .driver-status-pending { background: var(--warning); color: white; }
+        .driver-status-approved { background: var(--success); color: white; }
+        .driver-status-rejected { background: var(--error); color: white; }
+        .driver-actions { display: flex; gap: 10px; margin-top: 12px; }
+        .driver-edit-btn, .driver-cancel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
+        .driver-edit-btn { background: var(--accent-light); color: var(--accent); }
+        .driver-cancel-btn { background: var(--input-bg); color: var(--error); }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <div class="offline-badge" id="offlineBadge">Нет подключения к интернету</div>
+    <div class="header">
+        <div><div class="logo">VICTORIA</div><div class="logo-sub" id="appSubtitle">совместные поездки</div></div>
+        <div class="lang-selector"><button class="lang-btn active" data-lang="ru">RU</button><button class="lang-btn" data-lang="en">EN</button></div>
+    </div>
+    <div id="installBanner" class="install-banner" style="display: none;"><span id="installText">Установить приложение</span><button class="install-btn" id="installBtn">Установить</button></div>
+    
+    <div class="main-content">
+        <div id="orderScreen" class="screen active">
+            <div class="region-section"><div class="region-label" id="regionLabel">РЕГИОН</div><div class="region-selector" id="regionSelector"><span class="region-name" id="selectedRegionText">Выбрать регион</span><span>▼</span></div><div id="selectedCityInfo" class="selected-region-info" style="display: none;"></div></div>
+            <div class="container">
+                <div class="section"><div class="section-header" id="routeHeader">МАРШРУТ</div>
+                    <div class="address-item"><div class="address-dot green"></div><input type="text" class="address-input" id="fromInput" placeholder="Откуда"></div>
+                    <div class="address-item"><div class="address-dot red"></div><input type="text" class="address-input" id="toInput" placeholder="Куда"></div>
+                    <div id="extraAddresses"></div><div class="add-address-btn" id="addAddressBtn"><span id="addAddressText">+ Добавить адрес</span></div>
+                </div>
+                <div class="price-section">
+                    <div class="price-label">СТОИМОСТЬ ПОЕЗДКИ</div>
+                    <div class="price-input-wrapper"><span class="price-currency">₽</span><input type="number" id="priceInput" class="price-input" placeholder="Укажите сумму" value="" step="1" min="1" max="100000"></div>
+                    <div class="price-range">от 1 ₽ до 100 000 ₽</div>
+                    <div class="price-error" id="priceError">Укажите стоимость поездки</div>
+                </div>
+                <div class="section"><div class="section-header" id="passengersHeader">ПАССАЖИРЫ</div>
+                    <div class="passenger-row"><span class="passenger-label" id="passengersLabel">Количество человек</span>
+                        <div class="counter-group"><button class="counter-btn" id="decrementPassenger">−</button><span class="passenger-count" id="passengerCount">1</span><button class="counter-btn" id="incrementPassenger">+</button></div>
+                    </div>
+                    <div class="max-hint" id="maxHint">Максимум 4 человека (включая детей)</div>
+                    <div class="total-info" id="totalInfo"></div>
+                </div>
+                <div class="section"><div class="section-header" id="servicesHeader">ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ</div>
+                    <div class="services-grid" id="servicesGrid">
+                        <div class="service-checkbox-item" data-service="childseat"><div><div id="serviceChildseat">Детское кресло</div><div class="service-checkbox-price">+150 ₽</div></div><div class="service-checkbox-control"></div></div>
+                        <div class="service-checkbox-item" data-service="pet"><div><div id="servicePet">Питомец</div><div class="service-checkbox-price">+100 ₽</div></div><div class="service-checkbox-control"></div></div>
+                        <div class="service-checkbox-item" data-service="luggage"><div><div id="serviceLuggage">Багаж</div><div class="service-checkbox-price">0 ₽</div></div><div class="service-checkbox-control"></div></div>
+                        <div class="service-checkbox-item" data-service="ac"><div><div id="serviceAc">Кондиционер</div><div class="service-checkbox-price">0 ₽</div></div><div class="service-checkbox-control"></div></div>
+                        <div class="service-checkbox-item" data-service="helper"><div><div id="serviceHelper">Помощник с багажом</div><div class="service-checkbox-price">+200 ₽</div></div><div class="service-checkbox-control"></div></div>
+                        <div class="service-checkbox-item" data-service="nonSmoking"><div><div id="serviceNonSmoking">Не курящий водитель</div><div class="service-checkbox-price">0 ₽</div></div><div class="service-checkbox-control"></div></div>
+                    </div>
+                    <div class="service-note" id="serviceNote">Выберите дополнительные услуги</div>
+                </div>
+                <div class="section"><div class="section-header" id="childrenHeader">ДЕТИ</div>
+                    <div class="add-child-btn" id="addChildBtn"><span id="addChildText">+ Добавить ребёнка</span><span>▼</span></div>
+                    <div id="childrenList"></div>
+                </div>
+                <div class="section"><div class="section-header" id="commentHeader">КОММЕНТАРИЙ</div>
+                    <input type="text" class="comment-input" id="commentInput" placeholder="Дополнительные пожелания...">
+                </div>
+            </div>
+            <button class="search-btn" id="searchBtn"><span id="searchBtnText">Найти поездку</span></button>
+        </div>
+
+        <div id="statusScreen" class="screen">
+            <div class="status-container" id="statusContainer"></div>
+        </div>
+
+        <div id="historyScreen" class="screen">
+            <div class="container">
+                <div class="section">
+                    <div class="section-header" id="historyScreenTitle">ИСТОРИЯ ПОЕЗДОК</div>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="supportScreen" class="screen">
+            <div class="support-container">
+                <div class="support-header">
+                    <div class="support-header-title">Поддержка</div>
+                    <div class="support-header-subtitle">Мы всегда рядом, чтобы помочь</div>
+                </div>
+                <div class="support-section-title">Напишите нам</div>
+                <div class="support-message-form">
+                    <input type="text" id="supportName" class="support-input" placeholder="Ваше имя">
+                    <input type="email" id="supportEmail" class="support-input" placeholder="Email для ответа">
+                    <textarea id="supportMessage" class="support-textarea" placeholder="Опишите вашу проблему..."></textarea>
+                    <button class="support-send-btn" id="sendSupportMsg">Отправить сообщение</button>
+                    <button class="support-admin-btn" id="contactAdminBtn">Связь с администрацией</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="profileScreen" class="screen">
+            <div class="profile-container">
+                <div class="profile-card">
+                    <div class="profile-name" id="profileName">Гость</div>
+                    <div class="profile-phone" id="profilePhone">Не авторизован</div>
+                </div>
+                <div class="profile-menu-item" data-action="driver">
+                    <div class="profile-menu-left">
+                        <div class="profile-menu-title" id="driverMenuItem">Работа водителем</div>
+                        <div class="profile-menu-sub" id="driverStatusText">Стать водителем</div>
+                    </div>
+                    <div class="profile-menu-arrow">›</div>
+                </div>
+                <div class="profile-menu-item" data-action="language">
+                    <div class="profile-menu-left">
+                        <div class="profile-menu-title" id="languageMenuItem">Язык</div>
+                        <div class="profile-menu-sub" id="currentLangText">Русский</div>
+                    </div>
+                    <div class="profile-menu-arrow">›</div>
+                </div>
+                <div class="profile-menu-item" data-action="design">
+                    <div class="profile-menu-left">
+                        <div class="profile-menu-title" id="designMenuItem">Оформление</div>
+                        <div class="profile-menu-sub" id="currentThemeText">Светлая тема</div>
+                    </div>
+                    <div class="profile-menu-arrow">›</div>
+                </div>
+                <div class="profile-menu-item" data-action="about">
+                    <div class="profile-menu-left">
+                        <div class="profile-menu-title" id="aboutMenuItem">О приложении</div>
+                        <div class="profile-menu-sub">Версия 2.0.0</div>
+                    </div>
+                    <div class="profile-menu-arrow">›</div>
+                </div>
+                <div class="profile-menu-item" data-action="share">
+                    <div class="profile-menu-left">
+                        <div class="profile-menu-title" id="shareMenuItem">Рассказать о приложении</div>
+                        <div class="profile-menu-sub">Поделиться с друзьями</div>
+                    </div>
+                    <div class="profile-menu-arrow">›</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" data-nav="order"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9L12 3L21 9L12 15L3 9Z"/><path d="M5 9V15L12 21L19 15V9"/></svg></div><span class="nav-label" id="navOrder">Заказ</span></div>
+        <div class="nav-item" data-nav="status"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="nav-label" id="navStatus">Статус</span></div>
+        <div class="nav-item" data-nav="history"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div><span class="nav-label" id="navHistory">История</span></div>
+        <div class="nav-item" data-nav="support"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.7893 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"/></svg></div><span class="nav-label" id="navSupport">Поддержка</span></div>
+        <div class="nav-item" data-nav="profile"><div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/><circle cx="12" cy="7" r="4"/></svg></div><span class="nav-label" id="navProfile">Профиль</span></div>
+    </div>
+</div>
+
+<div id="regionModal" class="modal"><div class="modal-content"><div class="modal-header"><span id="modalTitle">Выберите область</span><span class="modal-close" id="modalClose">×</span></div><div id="modalList" class="modal-list"></div></div></div>
+<div id="ageModal" class="modal"><div class="modal-content"><div class="modal-header"><span id="ageModalTitle">Возраст ребёнка</span><span class="modal-close" id="ageModalClose">×</span></div><div class="age-grid" id="ageGrid"></div></div></div>
+<div id="languageModal" class="modal"><div class="modal-content"><div class="modal-header"><span id="languageModalTitle">Выбор языка</span><span class="modal-close" id="languageModalClose">×</span></div><div class="modal-list"><div class="modal-item" data-lang="ru"><span>Русский</span><span id="langRuCheck">✓</span></div><div class="modal-item" data-lang="en"><span>English</span><span id="langEnCheck">✓</span></div></div></div></div>
+<div id="designModal" class="modal"><div class="modal-content"><div class="modal-header"><span id="designTitle">Оформление</span><span class="modal-close" id="designModalClose">×</span></div><div class="modal-list"><div class="modal-item" data-theme="light"><span id="lightTheme">Светлая тема</span></div><div class="modal-item" data-theme="dark"><span id="darkTheme">Тёмная тема</span></div></div></div></div>
+<div id="driverModal" class="modal"><div class="modal-content"><div class="modal-header"><span id="driverModalTitle">Регистрация водителя</span><span class="modal-close" id="driverModalClose">×</span></div><div style="padding: 20px; max-height: 70vh; overflow-y: auto;"><div id="driverFormContainer"></div><div id="driverInfoContainer"></div></div></div></div>
+<div id="chatModal" class="modal"><div class="modal-content" style="max-width: 500px;"><div class="chat-container"><div class="chat-header"><div class="driver-avatar" style="width: 40px; height: 40px;" id="chatDriverAvatar">А</div><div style="flex: 1;"><div class="chat-driver-name" id="chatDriverName">Александр С.</div><div class="chat-online">● Онлайн</div></div><span class="modal-close" id="chatModalClose">×</span></div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-area"><input type="text" class="chat-input" id="chatInput" placeholder="Сообщение..."><button class="chat-send-btn" id="chatSendBtn">➤</button></div></div></div></div>
+
+<script>
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+const translations = {
+    ru: {
+        app_sub: "совместные поездки", region_label: "РЕГИОН", select_region: "Выбрать регион",
+        route_header: "МАРШРУТ", from_placeholder: "Откуда", to_placeholder: "Куда", add_address: "+ Добавить адрес",
+        waypoint_placeholder: "Промежуточный адрес", passengers_header: "ПАССАЖИРЫ", passengers_label: "Количество человек",
+        max_hint: "Максимум 4 человека (включая детей)", total_info: "Всего: {total} из {max} · Свободно: {free}",
+        services_header: "ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ", service_childseat: "Детское кресло", service_pet: "Питомец",
+        service_luggage: "Багаж", service_ac: "Кондиционер", service_helper: "Помощник с багажом",
+        service_non_smoking: "Не курящий водитель", service_note: "Выберите дополнительные услуги",
+        children_header: "ДЕТИ", add_child: "+ Добавить ребёнка", comment_header: "КОММЕНТАРИЙ",
+        comment_placeholder: "Дополнительные пожелания...", search_btn: "Найти поездку", searching: "Поиск...",
+        nav_order: "Заказ", nav_status: "Статус", nav_history: "История", nav_support: "Поддержка", nav_profile: "Профиль",
+        language_item: "Язык", design_item: "Оформление", about_item: "О приложении", share_item: "Рассказать о приложении", driver_item: "Работа водителем",
+        light_theme: "Светлая тема", dark_theme: "Тёмная тема", age_title: "Возраст ребёнка", language_title: "Выбор языка", history_title: "ИСТОРИЯ ПОЕЗДОК",
+        welcome: "Добро пожаловать в VICTORIA", theme_changed: "Тема изменена", region_selected: "Выбран город: {city}",
+        no_free_seats: "Нет свободных мест", max_passengers: "Нельзя больше {max} пассажиров",
+        select_region_error: "Выберите регион и город", fill_route_error: "Укажите адрес отправления и назначения",
+        max_seats_error: "Превышено максимальное количество мест", order_sent: "Заказ отправлен. Ищем водителя",
+        about_text: "VICTORIA\nВерсия 2.0.0\n© 2026", dev: "Функция в разработке",
+        data_restored: "Данные восстановлены", offline: "Нет подключения к интернету",
+        online: "Соединение восстановлено", app_installed: "Приложение установлено", install_text: "Установить приложение",
+        driver_title: "Регистрация водителя", driver_license_title: "Водительское удостоверение",
+        driver_license_front: "Лицевая сторона", driver_license_back: "Оборотная сторона",
+        driver_car_photo_title: "Фотоконтроль автомобиля", driver_car_photo_front: "Передний вид",
+        driver_car_photo_back: "Задний вид", driver_car_photo_left: "Левый бок",
+        driver_car_photo_right: "Правый бок", driver_car_photo_interior_front: "Передний салон",
+        driver_car_photo_interior_back: "Задний салон", driver_full_name: "ФИО", driver_phone: "Телефон",
+        driver_car_model: "Марка и модель", driver_car_color: "Цвет", driver_license_plate: "Госномер",
+        driver_year: "Год выпуска", driver_submit: "Отправить заявку", driver_edit: "Редактировать",
+        driver_cancel: "Удалить заявку", driver_status_pending: "На модерации",
+        driver_status_approved: "Одобрено", driver_status_rejected: "Отклонено",
+        driver_register_success: "Заявка успешно отправлена на модерацию!", driver_cancel_success: "Заявка удалена",
+        driver_phone_error: "Неверный номер телефона", driver_required_error: "Заполните все поля",
+        empty_history: "У вас пока нет поездок", sending: "Отправка заявки...",
+        message_sent: "Сообщение отправлено! Мы ответим вам в ближайшее время.",
+        searching_status: "Поиск водителя", driver_accepted_status: "Водитель принял заказ", 
+        driver_on_way_status: "Водитель в пути", driver_arrived_status: "Водитель на месте", 
+        trip_started_status: "Поездка началась", cancel_order: "Отменить заказ", 
+        order_cancelled_msg: "Вы отменили заказ", driver_name: "Александр С.", 
+        driver_rating: "4.9", car_model: "Hyundai Solaris", car_color: "Белый", 
+        car_plate: "А123ВС 777", waypoints_label: "Промежуточные точки",
+        passengers_label_short: "Пассажиры", children_label_short: "Дети", price_label: "Стоимость",
+        raise_price: "Поднять цену", waiting_driver: "Ожидание водителя", price_required: "Укажите стоимость поездки",
+        price_invalid: "Стоимость должна быть от 1 до 100 000 ₽", comment_label: "Комментарий для водителя",
+        chat: "Чат", type_message: "Сообщение...", guest: "Гость", not_authorized: "Не авторизован",
+        driver_status_text: "Стать водителем", light_theme_text: "Светлая тема", dark_theme_text: "Тёмная тема",
+        russian: "Русский", english: "English", admin_contact: "Связь с администрацией",
+        admin_message: "Запрос отправлен администратору"
+    },
+    en: {
+        app_sub: "ride sharing", region_label: "REGION", select_region: "Select region",
+        route_header: "ROUTE", from_placeholder: "From", to_placeholder: "To", add_address: "+ Add address",
+        waypoint_placeholder: "Waypoint", passengers_header: "PASSENGERS", passengers_label: "Number of people",
+        max_hint: "Maximum 4 people", total_info: "Total: {total} of {max} · Available: {free}",
+        services_header: "SERVICES", service_childseat: "Child seat", service_pet: "Pet",
+        service_luggage: "Luggage", service_ac: "AC", service_helper: "Luggage assistant",
+        service_non_smoking: "Non-smoking", service_note: "Select additional services",
+        children_header: "CHILDREN", add_child: "+ Add child", comment_header: "COMMENT",
+        comment_placeholder: "Additional wishes...", search_btn: "Find a ride", searching: "Searching...",
+        nav_order: "Order", nav_status: "Status", nav_history: "History", nav_support: "Support", nav_profile: "Profile",
+        language_item: "Language", design_item: "Theme", about_item: "About", share_item: "Share", driver_item: "Drive with us",
+        light_theme: "Light", dark_theme: "Dark", age_title: "Child age",
+        language_title: "Language", history_title: "RIDE HISTORY", welcome: "Welcome to VICTORIA",
+        theme_changed: "Theme changed", region_selected: "City: {city}", no_free_seats: "No free seats",
+        max_passengers: "Max {max} passengers", select_region_error: "Select region",
+        fill_route_error: "Enter addresses", max_seats_error: "Seat limit exceeded",
+        order_sent: "Order sent. Looking for driver", about_text: "VICTORIA\nv2.0.0\n© 2026",
+        dev: "Coming soon", data_restored: "Data restored", offline: "No internet",
+        online: "Connected", app_installed: "App installed", install_text: "Install app",
+        driver_title: "Driver registration", driver_license_title: "Driver license",
+        driver_license_front: "Front side", driver_license_back: "Back side",
+        driver_car_photo_title: "Vehicle photo control", driver_car_photo_front: "Front view",
+        driver_car_photo_back: "Rear view", driver_car_photo_left: "Left side",
+        driver_car_photo_right: "Right side", driver_car_photo_interior_front: "Front interior",
+        driver_car_photo_interior_back: "Rear interior", driver_full_name: "Full name",
+        driver_phone: "Phone", driver_car_model: "Car model", driver_car_color: "Color",
+        driver_license_plate: "License plate", driver_year: "Year", driver_submit: "Submit",
+        driver_edit: "Edit", driver_cancel: "Delete", driver_status_pending: "Pending moderation",
+        driver_status_approved: "Approved", driver_status_rejected: "Rejected",
+        driver_register_success: "Application submitted for moderation!", driver_cancel_success: "Application deleted",
+        driver_phone_error: "Invalid phone number", driver_required_error: "Fill all fields",
+        empty_history: "No rides yet", sending: "Sending application...",
+        message_sent: "Message sent! We will reply soon.",
+        searching_status: "Looking for driver", driver_accepted_status: "Driver accepted order", 
+        driver_on_way_status: "Driver on the way", driver_arrived_status: "Driver is here", 
+        trip_started_status: "Trip started", cancel_order: "Cancel order", 
+        order_cancelled_msg: "You cancelled the order", driver_name: "Alexander S.", 
+        driver_rating: "4.9", car_model: "Hyundai Solaris", car_color: "White", 
+        car_plate: "A123BC 777", waypoints_label: "Waypoints",
+        passengers_label_short: "Passengers", children_label_short: "Children", price_label: "Price",
+        raise_price: "Raise price", waiting_driver: "Waiting for driver", price_required: "Please enter trip price",
+        price_invalid: "Price must be between 1 and 100,000 ₽", comment_label: "Comment for driver",
+        chat: "Chat", type_message: "Message...", guest: "Guest", not_authorized: "Not authorized",
+        driver_status_text: "Become a driver", light_theme_text: "Light theme", dark_theme_text: "Dark theme",
+        russian: "Russian", english: "English", admin_contact: "Contact administration",
+        admin_message: "Request sent to administrator"
+    }
+};
+
+let currentLang = 'ru';
+let activeOrder = null;
+let orderTimer = null;
+let priceIncreaseTimeout = null;
+let chatMessages = [];
+let driverTimeouts = [];
+
+function t(key, params = {}) { 
+    let text = translations[currentLang][key] || translations.ru[key] || key; 
+    Object.keys(params).forEach(p => text = text.replace(`{${p}}`, params[p])); 
+    return text; 
+}
+
+function showMessage(msg, isErr = false) { 
+    let toast = document.querySelector('.toast-message'); 
+    if (toast) toast.remove(); 
+    toast = document.createElement('div'); 
+    toast.className = 'toast-message'; 
+    toast.style.background = isErr ? 'var(--error)' : 'var(--success)'; 
+    toast.style.color = 'white'; 
+    toast.textContent = msg; 
+    document.body.appendChild(toast); 
+    setTimeout(() => toast.remove(), 3000); 
+}
+
+function getAgeWord(age) { 
+    if (currentLang === 'en') return age === 1 ? 'year' : 'years'; 
+    if (age === 0) return 'лет'; 
+    if (age === 1) return 'год'; 
+    if (age <= 4) return 'года'; 
+    return 'лет'; 
+}
+
+function getChildEquipment(age) { 
+    const eq = { infant: { ru: 'Автолюлька (0-12 мес)', en: 'Infant seat' }, toddler: { ru: 'Кресло (1-4 года)', en: 'Child seat' }, child: { ru: 'Бустер (5-7 лет)', en: 'Booster' }, older: { ru: 'Бустер (8-12 лет)', en: 'Booster' } }; 
+    if (age === 0) return { text: eq.infant[currentLang], class: 'infant' }; 
+    if (age <= 4) return { text: eq.toddler[currentLang], class: 'toddler' }; 
+    if (age <= 7) return { text: eq.child[currentLang], class: 'child' }; 
+    return { text: eq.older[currentLang], class: 'older' }; 
+}
+
+function updateUI() {
+    document.getElementById('appSubtitle').innerText = t('app_sub');
+    document.getElementById('regionLabel').innerText = t('region_label');
+    document.getElementById('routeHeader').innerText = t('route_header');
+    document.getElementById('fromInput').placeholder = t('from_placeholder');
+    document.getElementById('toInput').placeholder = t('to_placeholder');
+    document.getElementById('addAddressText').innerText = t('add_address');
+    document.getElementById('passengersHeader').innerText = t('passengers_header');
+    document.getElementById('passengersLabel').innerText = t('passengers_label');
+    document.getElementById('maxHint').innerText = t('max_hint');
+    document.getElementById('servicesHeader').innerText = t('services_header');
+    document.getElementById('serviceChildseat').innerText = t('service_childseat');
+    document.getElementById('servicePet').innerText = t('service_pet');
+    document.getElementById('serviceLuggage').innerText = t('service_luggage');
+    document.getElementById('serviceAc').innerText = t('service_ac');
+    document.getElementById('serviceHelper').innerText = t('service_helper');
+    document.getElementById('serviceNonSmoking').innerText = t('service_non_smoking');
+    document.getElementById('serviceNote').innerText = t('service_note');
+    document.getElementById('childrenHeader').innerText = t('children_header');
+    document.getElementById('addChildText').innerText = t('add_child');
+    document.getElementById('commentHeader').innerText = t('comment_header');
+    document.getElementById('commentInput').placeholder = t('comment_placeholder');
+    document.getElementById('searchBtnText').innerText = t('search_btn');
+    document.getElementById('navOrder').innerText = t('nav_order');
+    document.getElementById('navStatus').innerText = t('nav_status');
+    document.getElementById('navHistory').innerText = t('nav_history');
+    document.getElementById('navSupport').innerText = t('nav_support');
+    document.getElementById('navProfile').innerText = t('nav_profile');
+    document.getElementById('driverMenuItem').innerText = t('driver_item');
+    document.getElementById('languageMenuItem').innerText = t('language_item');
+    document.getElementById('designMenuItem').innerText = t('design_item');
+    document.getElementById('aboutMenuItem').innerText = t('about_item');
+    document.getElementById('shareMenuItem').innerText = t('share_item');
+    document.getElementById('ageModalTitle').innerText = t('age_title');
+    document.getElementById('languageModalTitle').innerText = t('language_title');
+    document.getElementById('driverModalTitle').innerText = t('driver_title');
+    document.getElementById('installText').innerText = t('install_text');
+    document.getElementById('historyScreenTitle').innerText = t('history_title');
+    document.getElementById('lightTheme').innerText = t('light_theme');
+    document.getElementById('darkTheme').innerText = t('dark_theme');
+    document.getElementById('designTitle').innerText = t('design_item');
+    document.getElementById('languageModalTitle').innerText = t('language_title');
+    
+    const adminBtn = document.getElementById('contactAdminBtn');
+    if (adminBtn) adminBtn.innerText = t('admin_contact');
+    
+    const currentLangText = document.getElementById('currentLangText');
+    if (currentLangText) currentLangText.innerText = currentLang === 'ru' ? t('russian') : t('english');
+    
+    const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+    const currentThemeText = document.getElementById('currentThemeText');
+    if (currentThemeText) currentThemeText.innerText = currentTheme === 'dark' ? t('dark_theme_text') : t('light_theme_text');
+    
+    const driverStatusText = document.getElementById('driverStatusText');
+    if (driverStatusText) {
+        const driverData = localStorage.getItem('driver');
+        if (driverData) {
+            try {
+                const driver = JSON.parse(driverData);
+                if (driver.status === 'pending') driverStatusText.innerText = t('driver_status_pending');
+                else if (driver.status === 'approved') driverStatusText.innerText = t('driver_status_approved');
+                else if (driver.status === 'rejected') driverStatusText.innerText = t('driver_status_rejected');
+                else driverStatusText.innerText = t('driver_status_text');
+            } catch(e) { driverStatusText.innerText = t('driver_status_text'); }
+        } else {
+            driverStatusText.innerText = t('driver_status_text');
+        }
+    }
+    
+    document.querySelectorAll('.lang-btn').forEach(btn => { 
+        if (btn.dataset.lang === currentLang) btn.classList.add('active'); 
+        else btn.classList.remove('active'); 
+    });
+    if (window.RegionManager?.selectedCity) RegionManager.updateUI();
+    if (window.PassengerManager) PassengerManager.updateUI();
+    renderHistory();
+    renderStatusScreen();
+}
+
+function setLanguage(lang) { 
+    currentLang = lang; 
+    localStorage.setItem('lang', lang); 
+    updateUI(); 
+    showMessage(t('welcome')); 
+}
+
+function setTheme(theme) { 
+    if (theme === 'dark') { 
+        document.body.classList.add('dark'); 
+        localStorage.setItem('theme', 'dark'); 
+    } else { 
+        document.body.classList.remove('dark'); 
+        localStorage.setItem('theme', 'light'); 
+    } 
+    updateUI();
+    showMessage(t('theme_changed')); 
+}
+
+function navigateTo(screenName) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    
+    let screenId = screenName + 'Screen';
+    const activeScreen = document.getElementById(screenId);
+    if (activeScreen) {
+        activeScreen.classList.add('active');
+    }
+    
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.nav === screenName) {
+            item.classList.add('active');
+        }
+    });
+    
+    if (screenName === 'history') renderHistory();
+    if (screenName === 'status') renderStatusScreen();
+    if (screenName === 'profile') updateUI();
+    
+    saveState();
+}
+
+function clearOrderForm() {
+    document.getElementById('fromInput').value = '';
+    document.getElementById('toInput').value = '';
+    document.getElementById('commentInput').value = '';
+    document.querySelectorAll('#extraAddresses .address-item').forEach(item => item.remove());
+    PassengerManager.adults = 1;
+    PassengerManager.children = [];
+    PassengerManager.nextId = 1;
+    PassengerManager.updateUI();
+    PassengerManager.renderChildren();
+    ServicesManager.selected.clear();
+    document.querySelectorAll('.service-checkbox-item').forEach(el => el.classList.remove('active'));
+    const priceInput = document.getElementById('priceInput');
+    if (priceInput) priceInput.value = '';
+}
+
+function deleteHistoryItem(orderId) {
+    if (confirm('Удалить эту поездку из истории?')) {
+        HistoryManager.delete(orderId);
+        renderHistory();
+        showMessage('Поездка удалена из истории');
+    }
+}
+
+function renderHistory() {
+    const container = document.getElementById('historyList');
+    if (!container) return;
+    
+    const orders = HistoryManager ? HistoryManager.orders : [];
+    
+    if (!orders.length) {
+        container.innerHTML = `<div class="empty-history">${t('empty_history')}</div>`;
+        return;
+    }
+    
+    container.innerHTML = orders.map(order => `
+        <div class="history-item" data-id="${order.id}">
+            <div class="history-header">
+                <div class="history-date">${new Date(order.date).toLocaleString()}</div>
+                <button class="history-delete" data-id="${order.id}">✕</button>
+            </div>
+            <div class="history-content">
+                <div class="history-route">${escapeHtml(order.from)} → ${escapeHtml(order.to)}</div>
+                ${order.waypoints && order.waypoints.length ? `<div class="history-waypoints">${t('waypoints_label')}: ${escapeHtml(order.waypoints.join(', '))}</div>` : ''}
+                <div class="history-price">${t('price_label')}: ${order.price} ₽</div>
+                ${order.comment ? `<div class="history-comment"><span class="history-comment-label">${t('comment_label')}:</span> ${escapeHtml(order.comment)}</div>` : ''}
+                <div class="history-details">
+                    ${t('passengers_label_short')}: ${order.passengers} | ${t('children_label_short')}: ${order.children}<br>
+                    ${escapeHtml(order.driverName)} | ${escapeHtml(order.carModel)} ${escapeHtml(order.carColor)} | ${escapeHtml(order.carPlate)}
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.history-delete').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.dataset.id);
+            deleteHistoryItem(id);
+        };
+    });
+}
+
+function addChatMessage(message) {
+    chatMessages.push(message);
+    if (chatMessages.length > 100) chatMessages = chatMessages.slice(-100);
+    renderChatMessages();
+}
+
+function openChat() {
+    const modal = document.getElementById('chatModal');
+    if (modal) {
+        document.getElementById('chatDriverName').innerText = activeOrder?.driverName || t('driver_name');
+        document.getElementById('chatDriverAvatar').innerText = (activeOrder?.driverName || t('driver_name')).charAt(0);
+        renderChatMessages();
+        modal.classList.add('show');
+    }
+}
+
+function renderChatMessages() {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+    
+    if (chatMessages.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Напишите водителю</div>`;
+        return;
+    }
+    
+    container.innerHTML = chatMessages.map(msg => `
+        <div class="chat-message ${msg.sender === 'user' ? 'chat-message-user' : 'chat-message-driver'}">
+            <div class="chat-bubble ${msg.sender === 'user' ? 'chat-bubble-user' : 'chat-bubble-driver'}">
+                ${escapeHtml(msg.text)}
+                <div class="chat-time">${escapeHtml(msg.time)}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    addChatMessage({ id: Date.now(), sender: 'user', text: text, time: timeStr });
+    input.value = '';
+    
+    setTimeout(() => {
+        const responses = ["Понял, скоро буду!", "Хорошо, учту", "Буду через 5 минут", "Да, всё верно", "Уже выехал", "Спасибо, ждите"];
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        const now2 = new Date();
+        const timeStr2 = `${now2.getHours().toString().padStart(2, '0')}:${now2.getMinutes().toString().padStart(2, '0')}`;
+        addChatMessage({ id: Date.now() + 1, sender: 'driver', text: randomResponse, time: timeStr2 });
+        showMessage(`Водитель: ${randomResponse}`);
+    }, 1000 + Math.random() * 2000);
+}
+
+function renderStatusScreen() {
+    const container = document.getElementById('statusContainer');
+    if (!container) return;
+    
+    if (!activeOrder) {
+        container.innerHTML = `<div class="no-orders-card"><div class="no-orders-title">Нет активных заказов</div><div class="no-orders-text">У вас нет активных поездок. Сделайте заказ на вкладке "Заказ"</div></div>`;
+        return;
+    }
+    
+    const statusText = getStatusText(activeOrder.status);
+    const showDriverCard = ['driver_accepted', 'driver_on_way', 'driver_arrived', 'trip_started'].includes(activeOrder.status);
+    const showChatButton = ['driver_accepted', 'driver_on_way', 'driver_arrived'].includes(activeOrder.status);
+    
+    let statusMessage = '';
+    if (activeOrder.status === 'searching') statusMessage = `${t('waiting_driver')} • ${activeOrder.price} ₽`;
+    else if (activeOrder.status === 'driver_accepted') statusMessage = `${t('driver_accepted_status')} • ${activeOrder.price} ₽`;
+    else if (activeOrder.status === 'driver_on_way') statusMessage = t('driver_on_way_status');
+    else if (activeOrder.status === 'driver_arrived') statusMessage = t('driver_arrived_status');
+    else if (activeOrder.status === 'trip_started') statusMessage = t('trip_started_status');
+    
+    container.innerHTML = `
+        <div class="order-status-card">
+            <div class="status-header">
+                <div class="status-header-top"><span class="status-badge">СТАТУС ЗАКАЗА</span><span class="status-badge">${statusText}</span></div>
+                <div class="status-route">${escapeHtml(activeOrder.from.substring(0, 30))} → ${escapeHtml(activeOrder.to.substring(0, 30))}</div>
+                <div class="status-price">${activeOrder.price} ₽</div>
+                <div class="status-timer" id="statusTimer">${formatTime(activeOrder.elapsedSeconds || 0)}</div>
+            </div>
+            ${showDriverCard ? `
+            <div class="driver-card">
+                <div class="driver-header">
+                    <div class="driver-avatar">${activeOrder.driverName ? activeOrder.driverName.charAt(0) : 'А'}</div>
+                    <div class="driver-info"><div class="driver-name">${escapeHtml(activeOrder.driverName || t('driver_name'))}</div><div class="driver-rating">★ ${activeOrder.driverRating || t('driver_rating')}</div></div>
+                </div>
+                <div class="car-details">
+                    <div class="car-detail"><div class="car-detail-label">АВТОМОБИЛЬ</div><div class="car-detail-value">${escapeHtml(activeOrder.carModel || t('car_model'))}</div></div>
+                    <div class="car-detail"><div class="car-detail-label">ЦВЕТ</div><div class="car-detail-value">${escapeHtml(activeOrder.carColor || t('car_color'))}</div></div>
+                    <div class="car-detail"><div class="car-detail-label">ГОСНОМЕР</div><div class="car-detail-value">${escapeHtml(activeOrder.carPlate || t('car_plate'))}</div></div>
+                </div>
+                <div class="status-message"><div class="status-message-text">${statusMessage}</div></div>
+            </div>
+            ` : `<div class="driver-card"><div style="text-align: center; padding: 20px;"><div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;"><div style="width: 12px; height: 12px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s ease infinite;"></div><div style="width: 12px; height: 12px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s ease infinite 0.3s;"></div><div style="width: 12px; height: 12px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s ease infinite 0.6s;"></div></div><div style="font-weight: 500;">${t('searching_status')}</div><div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">${statusMessage}</div></div></div>`}
+            <div class="status-actions">
+                <button class="cancel-order-btn" id="cancelFromStatusBtn">${t('cancel_order')}</button>
+                ${activeOrder.status === 'searching' ? `<button class="raise-price-btn" id="raisePriceBtn">${t('raise_price')} (+100 ₽)</button>` : ''}
+                ${showChatButton ? `<button class="chat-btn" id="chatBtn">${t('chat')}</button>` : ''}
+            </div>
+        </div>
+    `;
+    
+    const cancelBtn = document.getElementById('cancelFromStatusBtn');
+    if (cancelBtn) cancelBtn.onclick = () => cancelOrder();
+    const raiseBtn = document.getElementById('raisePriceBtn');
+    if (raiseBtn) raiseBtn.onclick = () => raisePrice();
+    const chatBtn = document.getElementById('chatBtn');
+    if (chatBtn) chatBtn.onclick = () => openChat();
+}
+
+function raisePrice() {
+    if (!activeOrder || activeOrder.status !== 'searching') return;
+    const newPrice = activeOrder.price + 100;
+    if (newPrice > 100000) { showMessage('Максимальная цена 100 000 ₽', true); return; }
+    activeOrder.price = newPrice;
+    renderStatusScreen();
+    showMessage(`Цена повышена: ${newPrice} ₽`);
+    if (priceIncreaseTimeout) clearTimeout(priceIncreaseTimeout);
+    priceIncreaseTimeout = setTimeout(() => { if (activeOrder && activeOrder.status === 'searching') acceptOrderByDriver(); }, 3000);
+}
+
+function getStatusText(status) {
+    const statusMap = { 'searching': t('searching_status'), 'driver_accepted': t('driver_accepted_status'), 'driver_on_way': t('driver_on_way_status'), 'driver_arrived': t('driver_arrived_status'), 'trip_started': t('trip_started_status') };
+    return statusMap[status] || status;
+}
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function startOrderTimer() {
+    if (orderTimer) clearInterval(orderTimer);
+    orderTimer = setInterval(() => {
+        if (activeOrder) {
+            activeOrder.elapsedSeconds = (activeOrder.elapsedSeconds || 0) + 1;
+            const timerEl = document.getElementById('statusTimer');
+            if (timerEl) timerEl.innerText = formatTime(activeOrder.elapsedSeconds);
+        }
+    }, 1000);
+}
+
+function stopOrderTimer() {
+    if (orderTimer) { clearInterval(orderTimer); orderTimer = null; }
+}
+
+function clearDriverTimeouts() {
+    driverTimeouts.forEach(clearTimeout);
+    driverTimeouts = [];
+}
+
+function acceptOrderByDriver() {
+    if (!activeOrder || activeOrder.status !== 'searching') return;
+    activeOrder.status = 'driver_accepted';
+    renderStatusScreen();
+    chatMessages = [];
+    addChatMessage({ id: Date.now(), sender: 'driver', text: 'Здравствуйте! Я ваш водитель, скоро буду на месте.', time: new Date().toLocaleTimeString().slice(0, 5) });
+    
+    const timeout1 = setTimeout(() => { if (activeOrder && activeOrder.status === 'driver_accepted') { activeOrder.status = 'driver_on_way'; renderStatusScreen(); } }, 4000);
+    const timeout2 = setTimeout(() => { if (activeOrder && activeOrder.status === 'driver_on_way') { activeOrder.status = 'driver_arrived'; renderStatusScreen(); } }, 8000);
+    const timeout3 = setTimeout(() => { if (activeOrder && activeOrder.status === 'driver_arrived') { activeOrder.status = 'trip_started'; renderStatusScreen(); } }, 13000);
+    const timeout4 = setTimeout(() => { if (activeOrder && activeOrder.status === 'trip_started') completeOrder(); }, 18000);
+    
+    driverTimeouts = [timeout1, timeout2, timeout3, timeout4];
+}
+
+function completeOrder() {
+    stopOrderTimer();
+    clearDriverTimeouts();
+    if (priceIncreaseTimeout) clearTimeout(priceIncreaseTimeout);
+    const completedOrder = {
+        id: activeOrder.id, date: new Date().toISOString(), from: activeOrder.from, to: activeOrder.to,
+        waypoints: activeOrder.waypoints || [], passengers: activeOrder.passengers, children: activeOrder.childrenCount,
+        price: activeOrder.price, comment: activeOrder.comment || '', driverName: activeOrder.driverName || t('driver_name'),
+        driverRating: activeOrder.driverRating || '4.9', carModel: activeOrder.carModel || t('car_model'),
+        carColor: activeOrder.carColor || t('car_color'), carPlate: activeOrder.carPlate || t('car_plate'),
+        services: activeOrder.services, completed: true
+    };
+    HistoryManager.add(completedOrder);
+    activeOrder = null;
+    chatMessages = [];
+    renderStatusScreen();
+    clearOrderForm();
+    showMessage('Поездка завершена');
+    setTimeout(() => navigateTo('order'), 2000);
+}
+
+function cancelOrder() {
+    if (activeOrder) {
+        stopOrderTimer();
+        clearDriverTimeouts();
+        if (priceIncreaseTimeout) clearTimeout(priceIncreaseTimeout);
+        activeOrder = null;
+        chatMessages = [];
+        renderStatusScreen();
+        showMessage(t('order_cancelled_msg'), true);
+        navigateTo('order');
+    }
+}
+
+const RegionManager = { 
+    data: { "Ивановская область": ["Иваново", "Кинешма", "Шуя", "Вичуга", "Фурманов", "Тейково", "Кохма", "Родники", "Приволжск", "Юрьевец", "Заволжск", "Комсомольск", "Пучеж", "Гаврилов Посад", "Плёс", "Наволоки", "Южа", "Лух"], "Костромская область": ["Кострома", "Буй", "Галич", "Шарья", "Нерехта", "Мантурово", "Волгореченск", "Солигалич", "Чухлома", "Кологрив", "Нея", "Парфеньево", "Судиславль", "Островское", "Кадый"], "Владимирская область": ["Владимир", "Ковров", "Муром", "Александров", "Гусь-Хрустальный", "Кольчугино", "Вязники", "Судогда", "Киржач", "Юрьев-Польский", "Собинка", "Покров", "Лакинск", "Камешково", "Радужный", "Меленки"], "Московская область": ["Балашиха", "Химки", "Подольск", "Королёв", "Мытищи", "Люберцы", "Красногорск", "Электросталь", "Коломна", "Одинцово", "Домодедово", "Серпухов", "Щёлково", "Раменское", "Долгопрудный", "Реутов", "Пушкино", "Жуковский", "Сергиев Посад", "Орехово-Зуево", "Ногинск", "Чехов", "Ступино"] }, 
+    selectedRegion: "", selectedCity: "", 
+    init() { document.getElementById('regionSelector').onclick = () => this.open(); document.getElementById('modalClose').onclick = () => this.close(); }, 
+    close() { document.getElementById('regionModal').classList.remove('show'); }, 
+    open() { 
+        document.getElementById('modalTitle').innerText = currentLang === 'ru' ? 'Выберите область' : 'Select region'; 
+        document.getElementById('modalList').innerHTML = Object.keys(this.data).map(r => `<div class="modal-item" data-region="${r}">${r}<span>→</span></div>`).join(''); 
+        document.querySelectorAll('[data-region]').forEach(el => el.onclick = () => this.openCities(el.dataset.region)); 
+        document.getElementById('regionModal').classList.add('show'); 
+    }, 
+    openCities(region) { 
+        document.getElementById('modalTitle').innerText = currentLang === 'ru' ? `Города ${region}` : `Cities of ${region}`; 
+        document.getElementById('modalList').innerHTML = `<div class="back-btn" id="backToRegions">← ${currentLang === 'ru' ? 'Назад' : 'Back'}</div>` + this.data[region].map(c => `<div class="modal-item" data-city="${c}">${c}</div>`).join(''); 
+        document.getElementById('backToRegions').onclick = () => this.open(); 
+        document.querySelectorAll('[data-city]').forEach(el => el.onclick = () => { this.selectedCity = el.dataset.city; this.selectedRegion = region; this.updateUI(); this.close(); showMessage(t('region_selected', { city: this.selectedCity })); saveState(); }); 
+    }, 
+    updateUI() { 
+        document.getElementById('selectedRegionText').innerHTML = this.selectedCity ? `${this.selectedRegion}, ${this.selectedCity}` : t('select_region'); 
+        const info = document.getElementById('selectedCityInfo'); 
+        if (this.selectedCity) { info.style.display = 'block'; info.innerHTML = currentLang === 'ru' ? `Регион: ${this.selectedRegion}\nГород: ${this.selectedCity}` : `Region: ${this.selectedRegion}\nCity: ${this.selectedCity}`; } 
+        else info.style.display = 'none'; 
+    }, 
+    isValid() { return this.selectedCity && this.selectedRegion; } 
+};
+
+const PassengerManager = { 
+    adults: 1, children: [], nextId: 1, 
+    init() { document.getElementById('decrementPassenger').onclick = () => this.change(-1); document.getElementById('incrementPassenger').onclick = () => this.change(1); this.updateUI(); }, 
+    change(delta) { 
+        let newVal = this.adults + delta; 
+        if (newVal < 1) return; 
+        if (newVal > 4) { showMessage(t('max_passengers', { max: 4 }), true); return; } 
+        if (this.getTotal() + delta > 4) { showMessage(t('no_free_seats'), true); return; } 
+        this.adults = newVal; this.updateUI(); saveState(); 
+    }, 
+    addChild(age) { 
+        if (this.getFree() <= 0) { showMessage(t('no_free_seats'), true); return false; } 
+        this.children.push({ id: this.nextId++, age }); this.renderChildren(); this.updateUI(); saveState(); return true; 
+    }, 
+    removeChild(id) { this.children = this.children.filter(c => c.id !== id); this.renderChildren(); this.updateUI(); saveState(); }, 
+    renderChildren() { 
+        let html = ''; 
+        for (let c of this.children) { let eq = getChildEquipment(c.age); html += `<div class="child-item"><div>${c.age} ${getAgeWord(c.age)}</div><div><span class="child-badge ${eq.class}">${eq.text}</span></div><button class="remove-child" data-id="${c.id}">×</button></div>`; } 
+        document.getElementById('childrenList').innerHTML = html; 
+        document.querySelectorAll('.remove-child').forEach(btn => btn.onclick = () => this.removeChild(parseInt(btn.dataset.id))); 
+    }, 
+    getTotal() { return this.adults + this.children.length; }, 
+    getFree() { return 4 - this.getTotal(); }, 
+    updateUI() { document.getElementById('passengerCount').innerText = this.adults; document.getElementById('totalInfo').innerHTML = t('total_info', { total: this.getTotal(), max: 4, free: this.getFree() }); }, 
+    load(data) { if (data.adults !== undefined) this.adults = data.adults; if (data.children) { this.children = data.children; this.nextId = Math.max(...this.children.map(c => c.id), 0) + 1; this.renderChildren(); } this.updateUI(); } 
+};
+
+const ServicesManager = { 
+    selected: new Set(), 
+    init() { document.querySelectorAll('.service-checkbox-item').forEach(el => { el.onclick = (e) => { e.stopPropagation(); let id = el.dataset.service; if (this.selected.has(id)) { this.selected.delete(id); el.classList.remove('active'); } else { this.selected.add(id); el.classList.add('active'); } saveState(); }; }); }, 
+    load(data) { if (data.services) { this.selected.clear(); data.services.forEach(id => { this.selected.add(id); let el = document.querySelector(`.service-checkbox-item[data-service="${id}"]`); if (el) el.classList.add('active'); }); } } 
+};
+
+const RouteManager = { waypointCount: 0, init() { document.getElementById('addAddressBtn').onclick = () => this.add(); ['fromInput', 'toInput', 'commentInput'].forEach(id => { let el = document.getElementById(id); if (el) el.oninput = () => saveState(); }); }, add() { if (this.waypointCount >= 5) { showMessage('Максимум 5 точек', true); return; } this.waypointCount++; let div = document.createElement('div'); div.className = 'address-item'; div.innerHTML = `<div class="address-dot gray"></div><input class="address-input" placeholder="${t('waypoint_placeholder')}"><button class="remove-address">×</button>`; document.getElementById('extraAddresses').appendChild(div); div.querySelector('.remove-address').onclick = () => { div.remove(); this.waypointCount--; saveState(); }; div.querySelector('.address-input').oninput = () => saveState(); saveState(); }, getData() { let waypoints = []; document.querySelectorAll('#extraAddresses .address-input').forEach(i => { if (i.value.trim()) waypoints.push(i.value.trim()); }); return { from: document.getElementById('fromInput').value.trim(), to: document.getElementById('toInput').value.trim(), waypoints }; }, isValid() { let d = this.getData(); if (!d.from || !d.to) { showMessage(t('fill_route_error'), true); return false; } return true; }, load(state) { if (state.from) document.getElementById('fromInput').value = state.from; if (state.to) document.getElementById('toInput').value = state.to; if (state.comment) document.getElementById('commentInput').value = state.comment; if (state.waypoints) state.waypoints.forEach(a => { this.add(); let inputs = document.querySelectorAll('#extraAddresses .address-input'); if (inputs.length) inputs[inputs.length - 1].value = a; }); } };
+
+const HistoryManager = { orders: [], init() { this.load(); }, save() { localStorage.setItem('order_history', JSON.stringify(this.orders)); }, load() { let saved = localStorage.getItem('order_history'); if (saved) this.orders = JSON.parse(saved); }, add(order) { this.orders.unshift({ ...order, date: new Date().toISOString(), id: Date.now() }); if (this.orders.length > 50) this.orders = this.orders.slice(0, 50); this.save(); }, delete(id) { this.orders = this.orders.filter(order => order.id !== id); this.save(); } };
+
+const DriverManager = {
+    data: null, tempLicensePhotos: {}, tempCarPhotos: {},
+    init() { let saved = localStorage.getItem('driver'); if (saved) { try { this.data = JSON.parse(saved); } catch(e) {} } this.render = this.render.bind(this); },
+    render() { 
+        let formDiv = document.getElementById('driverFormContainer'); let infoDiv = document.getElementById('driverInfoContainer'); 
+        if (!formDiv || !infoDiv) return;
+        if (!this.data) { formDiv.style.display = 'block'; infoDiv.style.display = 'none'; this.renderForm(); } 
+        else { formDiv.style.display = 'none'; infoDiv.style.display = 'block'; this.renderInfo(); } 
+    },
+    renderForm() { 
+        let container = document.getElementById('driverFormContainer');
+        if (!container) return;
+        container.innerHTML = `<div class="driver-section"><div class="driver-section-title">${t('driver_license_title')}</div><div class="photo-grid" id="licensePhotoGrid"></div></div><div class="driver-section"><div class="driver-section-title">${t('driver_car_photo_title')}</div><div class="photo-grid" id="carPhotoGrid"></div></div><div class="driver-section"><div class="driver-section-title">${t('driver_title')}</div><div class="driver-form-group"><label class="driver-form-label">${t('driver_full_name')} *</label><input class="driver-form-input" id="dfName" placeholder="Иван Иванов"></div><div class="driver-form-group"><label class="driver-form-label">${t('driver_phone')} *</label><input class="driver-form-input" id="dfPhone" placeholder="+7 (999) 123-45-67"></div><div class="driver-form-group"><label class="driver-form-label">${t('driver_car_model')} *</label><input class="driver-form-input" id="dfCar" placeholder="Toyota Camry"></div><div class="driver-form-group"><label class="driver-form-label">${t('driver_car_color')} *</label><input class="driver-form-input" id="dfColor" placeholder="Белый"></div><div class="driver-form-group"><label class="driver-form-label">${t('driver_license_plate')} *</label><input class="driver-form-input" id="dfPlate" placeholder="А123ВС 777"></div><div class="driver-form-group"><label class="driver-form-label">${t('driver_year')} *</label><input class="driver-form-input" id="dfYear" placeholder="2020"></div></div><button class="driver-submit-btn" id="driverSubmit">${t('driver_submit')}</button>`;
+        this.renderPhotoGrid('licensePhotoGrid', ['license_front', 'license_back'], { license_front: 'driver_license_front', license_back: 'driver_license_back' }, 'tempLicensePhotos'); 
+        this.renderPhotoGrid('carPhotoGrid', ['car_front', 'car_back', 'car_left', 'car_right', 'car_interior_front', 'car_interior_back'], { car_front: 'driver_car_photo_front', car_back: 'driver_car_photo_back', car_left: 'driver_car_photo_left', car_right: 'driver_car_photo_right', car_interior_front: 'driver_car_photo_interior_front', car_interior_back: 'driver_car_photo_interior_back' }, 'tempCarPhotos'); 
+        let submitBtn = document.getElementById('driverSubmit'); if (submitBtn) submitBtn.onclick = (e) => { e.preventDefault(); this.submit(); };
+    },
+    renderPhotoGrid(containerId, photos, names, storageKey) { 
+        let grid = document.getElementById(containerId); if (!grid) return; 
+        grid.innerHTML = photos.map(key => `<div class="photo-item" data-key="${key}" id="photo_${key}"><div>📷</div><div>${t(names[key])}</div><div id="preview_${key}"></div></div>`).join(''); 
+        photos.forEach(key => { let el = document.getElementById(`photo_${key}`); if (el) el.onclick = () => this.selectPhoto(key, storageKey); }); 
+        let stored = this[storageKey] || {}; 
+        photos.forEach(key => { if (stored[key]) { let preview = document.getElementById(`preview_${key}`); if (preview) preview.innerHTML = `<img src="${stored[key]}" class="photo-preview"><button class="photo-delete" data-key="${key}" data-storage="${storageKey}">Удалить</button>`; let item = document.getElementById(`photo_${key}`); if (item) item.classList.add('has-photo'); } }); 
+        document.querySelectorAll('.photo-delete').forEach(btn => { btn.onclick = (e) => { e.stopPropagation(); let key = btn.dataset.key, storage = btn.dataset.storage; this[storage][key] = null; delete this[storage][key]; this.renderForm(); }; }); 
+    },
+    selectPhoto(key, storageKey) { let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = (e) => { if (e.target.files && e.target.files[0]) { let reader = new FileReader(); reader.onload = (ev) => { this[storageKey][key] = ev.target.result; this.renderForm(); }; reader.readAsDataURL(e.target.files[0]); } }; input.click(); },
+    submit() { 
+        let missingLicense = ['license_front', 'license_back'].filter(k => !this.tempLicensePhotos[k]); 
+        let missingCar = ['car_front', 'car_back', 'car_left', 'car_right', 'car_interior_front', 'car_interior_back'].filter(k => !this.tempCarPhotos[k]); 
+        if (missingLicense.length || missingCar.length) { showMessage(t('driver_photos_required'), true); return; } 
+        let name = document.getElementById('dfName')?.value.trim(); let phone = document.getElementById('dfPhone')?.value.trim(); let car = document.getElementById('dfCar')?.value.trim(); let color = document.getElementById('dfColor')?.value.trim(); let plate = document.getElementById('dfPlate')?.value.trim(); let year = document.getElementById('dfYear')?.value.trim(); 
+        if (!name || !phone || !car || !color || !plate || !year) { showMessage(t('driver_required_error'), true); return; } 
+        let phoneClean = phone.replace(/[\s\-+()]/g, ''); if (!/^(\+7|8)?\d{10}$/.test(phoneClean)) { showMessage(t('driver_phone_error'), true); return; }
+        this.data = { name, phone, car, color, plate, year: parseInt(year), licensePhotos: {...this.tempLicensePhotos}, carPhotos: {...this.tempCarPhotos}, status: 'pending', date: new Date().toISOString() }; 
+        localStorage.setItem('driver', JSON.stringify(this.data)); 
+        this.tempLicensePhotos = {}; this.tempCarPhotos = {}; 
+        this.render(); showMessage(t('driver_register_success'));
+        let modal = document.getElementById('driverModal'); if (modal) modal.classList.remove('show');
+        updateUI();
+    },
+    renderInfo() { 
+        let d = this.data; if (!d) return;
+        let licenseHtml = ['license_front', 'license_back'].map(k => d.licensePhotos && d.licensePhotos[k] ? `<img src="${d.licensePhotos[k]}" class="driver-photo">` : `<div class="driver-photo"></div>`).join(''); 
+        let carHtml = ['car_front', 'car_back', 'car_left', 'car_right', 'car_interior_front', 'car_interior_back'].map(k => d.carPhotos && d.carPhotos[k] ? `<img src="${d.carPhotos[k]}" class="driver-photo">` : `<div class="driver-photo"></div>`).join(''); 
+        let statusClass = d.status === 'pending' ? 'driver-status-pending' : d.status === 'approved' ? 'driver-status-approved' : 'driver-status-rejected'; 
+        let statusText = d.status === 'pending' ? t('driver_status_pending') : d.status === 'approved' ? t('driver_status_approved') : t('driver_status_rejected'); 
+        let container = document.getElementById('driverInfoContainer'); if (!container) return;
+        container.innerHTML = `<div class="driver-section"><div class="driver-section-title">${t('driver_license_title')}</div><div class="driver-photos">${licenseHtml}</div></div><div class="driver-section"><div class="driver-section-title">${t('driver_car_photo_title')}</div><div class="driver-photos">${carHtml}</div></div><div class="driver-card-full"><div class="driver-card-row"><span>${t('driver_full_name')}</span><span>${escapeHtml(d.name)}</span></div><div class="driver-card-row"><span>${t('driver_phone')}</span><span>${escapeHtml(d.phone)}</span></div><div class="driver-card-row"><span>${t('driver_car_model')}</span><span>${escapeHtml(d.car)}</span></div><div class="driver-card-row"><span>${t('driver_car_color')}</span><span>${escapeHtml(d.color)}</span></div><div class="driver-card-row"><span>${t('driver_license_plate')}</span><span>${escapeHtml(d.plate)}</span></div><div class="driver-card-row"><span>${t('driver_year')}</span><span>${d.year}</span></div></div><div class="driver-status ${statusClass}">${statusText}</div><div class="driver-actions"><button class="driver-edit-btn" id="editDriver">${t('driver_edit')}</button><button class="driver-cancel-btn" id="cancelDriver">${t('driver_cancel')}</button></div>`; 
+        let editBtn = document.getElementById('editDriver'); let cancelBtn = document.getElementById('cancelDriver');
+        if (editBtn) editBtn.onclick = () => this.edit(); 
+        if (cancelBtn) cancelBtn.onclick = () => { if (confirm(currentLang === 'ru' ? 'Удалить заявку?' : 'Delete application?')) { this.data = null; localStorage.removeItem('driver'); this.render(); showMessage(t('driver_cancel_success')); let modal = document.getElementById('driverModal'); if (modal) modal.classList.remove('show'); updateUI(); } }; 
+    },
+    edit() { if (!this.data) return; this.tempLicensePhotos = {...this.data.licensePhotos}; this.tempCarPhotos = {...this.data.carPhotos}; this.renderForm(); setTimeout(() => { let nameInput = document.getElementById('dfName'); let phoneInput = document.getElementById('dfPhone'); let carInput = document.getElementById('dfCar'); let colorInput = document.getElementById('dfColor'); let plateInput = document.getElementById('dfPlate'); let yearInput = document.getElementById('dfYear'); if (nameInput) nameInput.value = this.data.name; if (phoneInput) phoneInput.value = this.data.phone; if (carInput) carInput.value = this.data.car; if (colorInput) colorInput.value = this.data.color; if (plateInput) plateInput.value = this.data.plate; if (yearInput) yearInput.value = this.data.year; }, 50); },
+    openModal() { this.render(); let modal = document.getElementById('driverModal'); if (modal) modal.classList.add('show'); } 
+};
+
+const OrderManager = { 
+    async submit() { 
+        const btn = document.getElementById('searchBtn');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = t('searching');
+        try {
+            if (!RegionManager.isValid()) { showMessage(t('select_region_error'), true); return false; } 
+            if (!RouteManager.isValid()) return false; 
+            if (PassengerManager.getTotal() > 4) { showMessage(t('max_seats_error'), true); return false; }
+            if (activeOrder) { showMessage('У вас уже есть активный заказ!', true); return false; }
+            const priceInput = document.getElementById('priceInput');
+            let price = parseInt(priceInput.value);
+            if (!priceInput.value || isNaN(price) || price === '') { const errorEl = document.getElementById('priceError'); if (errorEl) { errorEl.classList.add('show'); errorEl.innerText = t('price_required'); } showMessage(t('price_required'), true); return false; }
+            if (price < 1 || price > 100000) { const errorEl = document.getElementById('priceError'); if (errorEl) { errorEl.classList.add('show'); errorEl.innerText = t('price_invalid'); } showMessage(t('price_invalid'), true); return false; }
+            const errorEl = document.getElementById('priceError'); if (errorEl) errorEl.classList.remove('show');
+            const route = RouteManager.getData();
+            const comment = document.getElementById('commentInput').value.trim();
+            activeOrder = { id: Date.now(), from: route.from, to: route.to, waypoints: route.waypoints, passengers: PassengerManager.adults, childrenCount: PassengerManager.children.length, children: PassengerManager.children, services: Array.from(ServicesManager.selected), comment: comment, status: 'searching', elapsedSeconds: 0, price: price, driverName: t('driver_name'), driverRating: t('driver_rating'), carModel: t('car_model'), carColor: t('car_color'), carPlate: t('car_plate') };
+            showMessage(`Заказ отправлен! Стоимость: ${price} ₽`);
+            navigateTo('status');
+            renderStatusScreen();
+            startOrderTimer();
+            setTimeout(() => { if (activeOrder && activeOrder.status === 'searching') acceptOrderByDriver(); }, 5000);
+            saveState();
+            return true;
+        } finally { btn.disabled = false; btn.innerText = originalText; }
+    }
+};
+
+function initPriceSection() {
+    const priceInput = document.getElementById('priceInput');
+    if (priceInput) {
+        priceInput.oninput = () => { const errorEl = document.getElementById('priceError'); if (errorEl) errorEl.classList.remove('show'); let val = parseInt(priceInput.value); if (!isNaN(val)) { if (val < 1) priceInput.value = 1; if (val > 100000) priceInput.value = 100000; } saveState(); };
+        priceInput.onkeypress = (e) => { if (e.key === 'Enter') OrderManager.submit(); };
+    }
+}
+
+function initSupportScreen() {
+    const sendBtn = document.getElementById('sendSupportMsg');
+    if (sendBtn) sendBtn.onclick = () => { const message = document.getElementById('supportMessage')?.value.trim(); if (!message) { showMessage('Пожалуйста, введите сообщение', true); return; } showMessage(t('message_sent')); if (document.getElementById('supportName')) document.getElementById('supportName').value = ''; if (document.getElementById('supportEmail')) document.getElementById('supportEmail').value = ''; if (document.getElementById('supportMessage')) document.getElementById('supportMessage').value = ''; };
+    
+    const adminBtn = document.getElementById('contactAdminBtn');
+    if (adminBtn) adminBtn.onclick = () => { showMessage(t('admin_message')); };
+}
+
+function initModals() {
+    document.querySelectorAll('.modal-close').forEach(btn => { btn.onclick = function() { const modal = this.closest('.modal'); if (modal) modal.classList.remove('show'); }; });
+    document.querySelectorAll('.modal').forEach(modal => { modal.onclick = function(e) { if (e.target === this) this.classList.remove('show'); }; });
+    const chatModalClose = document.getElementById('chatModalClose'); if (chatModalClose) chatModalClose.onclick = () => document.getElementById('chatModal').classList.remove('show');
+    const chatSendBtn = document.getElementById('chatSendBtn'); if (chatSendBtn) chatSendBtn.onclick = () => sendChatMessage();
+    const chatInput = document.getElementById('chatInput'); if (chatInput) chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendChatMessage(); };
+    document.querySelectorAll('.nav-item').forEach(item => { item.onclick = () => navigateTo(item.dataset.nav); });
+    document.querySelectorAll('#profileScreen .profile-menu-item').forEach(item => { item.onclick = () => { const action = item.dataset.action; if (action === 'driver') DriverManager.openModal(); else if (action === 'language') document.getElementById('languageModal').classList.add('show'); else if (action === 'design') document.getElementById('designModal').classList.add('show'); else if (action === 'about') alert(t('about_text')); else if (action === 'share') { if (navigator.share) navigator.share({ title: 'VICTORIA', text: 'VICTORIA - ride sharing', url: location.href }); else showMessage(t('dev')); } }; });
+    document.querySelectorAll('[data-theme]').forEach(btn => { btn.onclick = () => { setTheme(btn.dataset.theme); document.getElementById('designModal').classList.remove('show'); }; });
+    document.querySelectorAll('[data-lang]').forEach(btn => { btn.onclick = () => { setLanguage(btn.dataset.lang); document.getElementById('languageModal').classList.remove('show'); }; });
+    const addChildBtn = document.getElementById('addChildBtn'); if (addChildBtn) addChildBtn.onclick = () => { if (PassengerManager.getFree() <= 0) { showMessage(t('no_free_seats'), true); return; } const grid = document.getElementById('ageGrid'); if (!grid) return; grid.innerHTML = ''; for (let a = 0; a <= 12; a++) { const div = document.createElement('div'); div.className = 'age-option'; div.innerText = `${a} ${getAgeWord(a)}`; div.onclick = () => { PassengerManager.addChild(a); document.getElementById('ageModal').classList.remove('show'); }; grid.appendChild(div); } document.getElementById('ageModal').classList.add('show'); };
+    const ageModalClose = document.getElementById('ageModalClose'); if (ageModalClose) ageModalClose.onclick = () => document.getElementById('ageModal').classList.remove('show');
+    const languageModalClose = document.getElementById('languageModalClose'); if (languageModalClose) languageModalClose.onclick = () => document.getElementById('languageModal').classList.remove('show');
+    const designModalClose = document.getElementById('designModalClose'); if (designModalClose) designModalClose.onclick = () => document.getElementById('designModal').classList.remove('show');
+    const driverModalClose = document.getElementById('driverModalClose'); if (driverModalClose) driverModalClose.onclick = () => document.getElementById('driverModal').classList.remove('show');
+    const searchBtn = document.getElementById('searchBtn'); if (searchBtn) searchBtn.onclick = () => OrderManager.submit();
+}
+
+function saveState() {
+    try {
+        const state = { version: '2.0', timestamp: Date.now(), region: RegionManager.selectedRegion, city: RegionManager.selectedCity, from: document.getElementById('fromInput')?.value || '', to: document.getElementById('toInput')?.value || '', comment: document.getElementById('commentInput')?.value || '', waypoints: [], adults: PassengerManager.adults, children: PassengerManager.children, services: Array.from(ServicesManager.selected), lang: currentLang, activeScreen: document.querySelector('.screen.active')?.id || 'orderScreen', activeOrder: activeOrder, lastPrice: document.getElementById('priceInput')?.value || '', chatMessages: chatMessages };
+        document.querySelectorAll('#extraAddresses .address-input').forEach(i => { const v = i.value.trim(); if (v) state.waypoints.push(v); });
+        localStorage.setItem('state', JSON.stringify(state));
+    } catch (e) { console.error('Save state error:', e); }
+}
+
+function loadState() {
+    try {
+        const saved = localStorage.getItem('state');
+        if (!saved) return;
+        const state = JSON.parse(saved);
+        if (state.version !== '2.0' || Date.now() - state.timestamp > 7 * 24 * 60 * 60 * 1000) return;
+        if (state.region && state.city) { RegionManager.selectedRegion = state.region; RegionManager.selectedCity = state.city; RegionManager.updateUI(); }
+        if (state.lang) setLanguage(state.lang); else setLanguage('ru');
+        RouteManager.load(state);
+        PassengerManager.load(state);
+        ServicesManager.load(state);
+        if (state.lastPrice) { const priceInput = document.getElementById('priceInput'); if (priceInput) priceInput.value = state.lastPrice; }
+        if (state.activeOrder) { activeOrder = state.activeOrder; if (state.chatMessages) chatMessages = state.chatMessages; if (activeOrder.status === 'searching') startOrderTimer(); }
+        let screenName = 'order'; if (state.activeScreen === 'statusScreen') screenName = 'status'; else if (state.activeScreen === 'historyScreen') screenName = 'history'; else if (state.activeScreen === 'supportScreen') screenName = 'support'; else if (state.activeScreen === 'profileScreen') screenName = 'profile';
+        navigateTo(screenName);
+        setTimeout(() => showMessage(t('data_restored')), 500);
+    } catch (e) { console.error('Load state error:', e); }
+}
+
+function init() {
+    RegionManager.init();
+    PassengerManager.init();
+    ServicesManager.init();
+    RouteManager.init();
+    DriverManager.init();
+    HistoryManager.init();
+    initModals();
+    initSupportScreen();
+    initPriceSection();
+    if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+    loadState();
+    updateUI();
+    window.addEventListener('online', () => { document.getElementById('offlineBadge')?.classList.remove('show'); showMessage(t('online')); });
+    window.addEventListener('offline', () => { document.getElementById('offlineBadge')?.classList.add('show'); showMessage(t('offline'), true); });
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installBanner').style.display = 'flex'; });
+    document.getElementById('installBtn')?.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') showMessage(t('app_installed')); document.getElementById('installBanner').style.display = 'none'; deferredPrompt = null; } });
+}
+
+init();
+</script>
+</body>
+</html>
